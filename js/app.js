@@ -1,3 +1,6 @@
+import { requireAuth } from "./auth.js";
+requireAuth();
+
 import {
     getTodos,
     createTodo,
@@ -45,8 +48,9 @@ async function renderTodos() {
 
 async function renderStats() {
     const stats = await getStats();
+
     totalSpan.textContent = stats.total;
-    completedSpan.textContent = stats.completed;
+    completedSpan.textContent = stats.concluidas;
 }
 
 async function refresh() {
@@ -67,3 +71,4 @@ form.addEventListener("submit", async (e) => {
 });
 
 refresh();
+
