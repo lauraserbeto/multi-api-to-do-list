@@ -1,38 +1,76 @@
-let todos = [
-    { id: 1, title: "Estudar Laravel", description: "", completed: false },
-    { id: 2, title: "Estudar Express", description: "", completed: true },
-    { id: 3, title: "Estudar FastAPI", description: "", completed: false }
-];
+import { API_CONFIG } from "./api.js";
 
-export function getTodos() {
-    return Promise.resolve(todos);
+function getToken() {
+    return localStorage.getItem("token");
 }
 
-export function createTodo(data) {
-    const newTodo = {
-        id: Date.now(),
-        ...data,
-        completed: false
+function headers() {
+    return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${getToken()}`
     };
-
-    todos.push(newTodo);
-    return Promise.resolve(newTodo);
 }
 
-export function toggleTodo(id) {
+// Adapter: backend → frontend
+function mapTodo(t) {
+    return {
+        id: t.id,
+        title: t.titulo,
+        completed: t.concluida
+    };
+}
+
+export async function getTodos() {
+    const res = await fetch(`${API_CONFIG.EXPRESS}/tarefas`, {
+        headers: headers()
+    });
+
+    const data = await res.json();
+    return data.map(mapTodo);
+}
+
+export async function createTodo(data) {
+    const res = await fetch(`${API_CONFIG.EXPRESS}/tarefas`, {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({
+            titulo: data.title
+        })
+    });
+
+    return mapTodo(await res.json());
+}
+
+export async function toggleTodo(id) {
+    const todos = await getTodos();
     const todo = todos.find(t => t.id === id);
-    todo.completed = !todo.completed;
-    return Promise.resolve(todo);
+
+    const res = await fetch(`${API_CONFIG.EXPRESS}/tarefas/${id}`, {
+        method: "PUT",
+        headers: headers(),
+        body: JSON.stringify({
+            concluida: !todo.completed
+        })
+    });
+
+    return mapTodo(await res.json());
 }
 
-export function deleteTodo(id) {
-    todos = todos.filter(t => t.id !== id);
-    return Promise.resolve();
+export async function deleteTodo(id) {    
+    console.warn("Delete ainda não implementado no backend");
 }
 
-export function getStats() {
-    const total = todos.length;
-    const completed = todos.filter(t => t.completed).length;
+export async function getStats() {
+    const token = getToken();
 
-    return Promise.resolve({ total, completed });
+    // pegar userId do token (segurança complementar ao backend)
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const userId = payload.id;
+
+    const res = await fetch(`${API_CONFIG.FASTAPI}/estatisticas/${userId}`, {
+        headers: headers()
+    });
+
+    return res.json();
 }
+
